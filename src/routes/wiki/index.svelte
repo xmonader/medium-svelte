@@ -20,7 +20,7 @@
         let res = []
         let gun = Gun("ws://127.0.0.1:8000/gun")
 
-        gun.get("wiki").get("articles").map().on( (v, k) => res.push({slug: k, title: v.title, content:v.content}))
+        gun.get("wiki").get("articles").map().on( (v, k) => res.push({slug: v.slug, title: v.title, content:v.content}))
         return res
     }
 

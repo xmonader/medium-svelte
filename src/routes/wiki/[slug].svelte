@@ -25,10 +25,12 @@
     export let article = {}
     export let gun
 
+
+
     var converter = new showdown.Converter()
 
     $: currentArticleMarkdown =  converter.makeHtml(currentArticleContent);
-
+    $: articleSlug = `article://${slug}`
     function editArticleTitle(article){
         editingTitle = true
         currentArticleTitle = article.title
@@ -46,8 +48,8 @@
            editingTitle = false
            editingContent = false
 
-           const newArticle = {content:currentArticleContent, title:currentArticleTitle}
-           gun.get("wiki").get("articles").get(slug).put(newArticle)
+           const newArticle = {content:currentArticleContent, title:currentArticleTitle, slug:slug}
+           gun.get("wiki").get("articles").get(articleSlug).put(newArticle)
 
         }
     }
@@ -66,8 +68,8 @@
             console.log(`updating content  to ${currentArticleContent}`)
            editingTitle = false
            editingContent = false
-           const newArticle = {content:currentArticleContent, title:currentArticleTitle}
-           gun.get("wiki").get("articles").get(slug).put(newArticle)
+           const newArticle = {content:currentArticleContent, title:currentArticleTitle, slug:slug}
+           gun.get("wiki").get("articles").get(articleSlug).put(newArticle)
     }
 
     import { onMount } from 'svelte';
@@ -77,7 +79,7 @@
 	onMount(() => {
         gun = Gun("ws://127.0.0.1:8000/gun")
 
-        let articlebucket = gun.get("wiki").get("articles").get(slug)
+        let articlebucket = gun.get("wiki").get("articles").get(articleSlug)
         articlebucket.on( (data) => {
             article = data || {};
              console.log(`setting article to ${JSON.stringify(article)}`)
