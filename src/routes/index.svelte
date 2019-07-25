@@ -34,6 +34,12 @@
 
 <svelte:head>
 	<title>Sapper project template</title>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script> -->
+
+
 </svelte:head>
 
 <h1>Great success!</h1>
