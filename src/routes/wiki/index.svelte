@@ -14,12 +14,16 @@
 
     import { onMount } from 'svelte';
     export let params;
-    let wikiarticles = []
-	onMount(() => {
-        var gun = Gun("ws://127.0.0.1:8000/gun")
-        let wikiarticles = gun.get("wiki").get("articles")
-        console.log("wikiarticles: " + JSON.stringify(wikiarticles))
-	});
+    export var gun;
+
+    function getArticles() {
+        let res = []
+        let gun = Gun("ws://127.0.0.1:8000/gun")
+
+        gun.get("wiki").get("articles").map().on( (v, k) => res.push({slug: k, title: v.title, content:v.content}))
+        return res
+    }
+
 
 </script>
 
@@ -34,13 +38,12 @@
 <h1>Recent articles</h1>
 
 <ul>
-	{#each wikiarticles as article}
+	{#each getArticles() as article}
 		<!-- we're using the non-standard `rel=prefetch` attribute to
 				tell Sapper to load the data for the page as soon as
 				the user hovers over the link or taps it, instead of
 				waiting for the 'click' event -->
-                {article}
-		<!-- <li><a rel='prefetch' href='wiki/{article.slug}'>{article.title}</a></li> -->
+		<li><a rel='prefetch' href='wiki/{article.slug}'>{article.title}</a></li>
 	{:else}
         no articles yet..
     {/each}

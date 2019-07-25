@@ -16,13 +16,18 @@
     const ENTER_KEY = "Enter"
     const ESCAPE_KEY = "Escape"
     export let params
-    let currentArticleTitle = ""
-    let currentArticleContent = ""
-    let editingTitle = false
-    let editingContent = false
-    let slug = params.slug
-    let articlebucket
+    export let currentArticleTitle = ""
+    export let currentArticleContent = ""
+    export let editingTitle = false
+    export let editingContent = false
+    export let slug = params.slug
+    export let articlebucket
+    export let article = {}
+    export let gun
 
+    var converter = new showdown.Converter()
+
+    $: currentArticleMarkdown =  converter.makeHtml(currentArticleContent);
 
     function editArticleTitle(article){
         editingTitle = true
@@ -39,37 +44,50 @@
         if (event.key===ENTER_KEY){
             console.log(`updating title  to ${currentArticleTitle}`)
            editingTitle = false
-           articlebucket.get(slug).put({content:currentArticleTitle})
+           editingContent = false
+
+           const newArticle = {content:currentArticleContent, title:currentArticleTitle}
+           gun.get("wiki").get("articles").get(slug).put(newArticle)
 
         }
     }
-    function maybeDoneEditContent(event, article){
+    // function maybeDoneEditContent(event, article){
         
-        if (event.key===ENTER_KEY){
+    //     if (event.key===ENTER_KEY){
+    //         console.log(`updating content  to ${currentArticleContent}`)
+    //        editingTitle = false
+    //        editingContent = false
+    //        const newArticle = {content:currentArticleContent, title:currentArticleTitle}
+    //        gun.get("wiki").get("articles").get(slug).put(newArticle)
+    //     }
+    // }
+    function saveContent(event){
+        
             console.log(`updating content  to ${currentArticleContent}`)
-            editingContent = false
-            articlebucket.get(slug).put({content:currentArticleContent})
-
-        }
+           editingTitle = false
+           editingContent = false
+           const newArticle = {content:currentArticleContent, title:currentArticleTitle}
+           gun.get("wiki").get("articles").get(slug).put(newArticle)
     }
 
     import { onMount } from 'svelte';
     // export let params;
-    let article;
 
 
 	onMount(() => {
-        var gun = Gun("ws://127.0.0.1:8000/gun")
+        gun = Gun("ws://127.0.0.1:8000/gun")
 
         let articlebucket = gun.get("wiki").get("articles").get(slug)
-        articlebucket.on( (data) => article = data)
+        articlebucket.on( (data) => {
+            article = data || {};
+             console.log(`setting article to ${JSON.stringify(article)}`)
+             currentArticleContent = article.content
+             currentArticleTitle = article.title
+        })
+
         console.log("article: ", article)
 	});
 
-    // console.log("params: " + JSON.stringify(params))
-    // console.log("slug: " + slug)
-
-    console.log(article)
 </script>
 
 
@@ -114,23 +132,29 @@
 
 <div>
     <div>
-        {#if !article || editingTitle}
+        {#if !article.title || editingTitle}
             <label>Title:</label><input type="text" class="title-input" bind:value="{currentArticleTitle}" on:keydown={(event) => maybeDoneEditTitle(event, article)} />
         {:else}
-            <div class="article-item-title article-item-label" on:dblclick={() => editArticleTitle(article)}>
+            <div class="article-item-title article-item-label content" on:dblclick={() => editArticleTitle(article)}>
                 {article.title}
             </div>
         {/if}
     </div>
 
     <div>
-        {#if !article || editingContent}
-            <label>content:</label><textarea class="content-input" bind:value="{currentArticleContent}" on:keydown={(event) => maybeDoneEditContent(event, article)} />
-        {:else}
-            <div class="article-item-title article-item-label" on:dblclick={() => editArticleContent(article)}>
-                {article.title}
+        {#if !article.content || editingContent}
+            <label>content:</label><textarea class="content-input" bind:value="{currentArticleContent}" />
+            <div class="markdownpreview">
+                {@html currentArticleMarkdown}
             </div>
+            <button on:click={saveContent}>Save</button>
+        {:else}
+            <div class="article-item-title article-item-label content" on:dblclick={() => editArticleContent(article)}>
+                {@html currentArticleMarkdown}
+            </div>
+
         {/if}
     </div>
+
 
 </div>
