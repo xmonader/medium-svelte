@@ -76,6 +76,12 @@
       .get(articleSlug)
       .put(newArticle);
   }
+  function addTag() {
+    console.log("adding tag..");
+  }
+  function removeTag(idx) {
+    console.log("removing tag..");
+  }
 
   import { onMount } from "svelte";
   // export let params;
@@ -96,6 +102,18 @@
 
     console.log("article: ", article);
   });
+
+  //   function enter(node, callback) {
+  //     function onkeydown(event) {
+  //       if (event.which === 13) callback(node);
+  //     }
+  //     node.addEventListener("keydown", onkeydown);
+  //     return {
+  //       destroy() {
+  //         node.removeEventListener("keydown", onkeydown);
+  //       }
+  //     };
+  //   }
 </script>
 
 <svelte:head>
@@ -103,6 +121,27 @@
 </svelte:head>
 <div>
   <div>
+
+    <!--
+
+    {#if article.tagList}
+      <div class="tag-list">
+        {#each article.tagList as tag, i}
+          <span class="tag-default tag-pill">
+            <i class="ion-close-round" on:click={() => removeTag(i)} />
+            {tag}
+          </span>
+        {/each}
+      </div>
+    {/if}
+
+    <input
+      class="form-control"
+      type="text"
+      placeholder="Enter tags"
+      use:enter={addTag} />
+
+      -->
     {#if !article.title || editingTitle}
       <input
         type="text"
@@ -124,6 +163,11 @@
   <div>
     {#if !article.content || editingContent}
       <div class="article-content">
+        <textarea
+          rows="20"
+          class="form-control form-control-lg"
+          bind:value={currentArticleContent}
+          on:keydown={event => maybeDoneEditContent(event, article)} />
         <button on:click={saveContent}>Save</button>
       </div>
       <div class="markdownpreview">
@@ -136,6 +180,7 @@
         {@html currentArticleMarkdown}
       </div>
     {/if}
+
   </div>
 
 </div>
