@@ -1,3 +1,7 @@
+<script>
+
+</script>
+
 <style>
   h1,
   p {
@@ -36,14 +40,4 @@
     </div>
   </div>
 
-  <div class="container page">
-    <div class="row">
-
-      <div class="col-md-3">
-        <div class="sidebar">
-          <p>Popular Tags</p>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>

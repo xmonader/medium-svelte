@@ -7,6 +7,8 @@
 </script>
 
 <script>
+  import { onMount } from "svelte";
+
   const ENTER_KEY = "Enter";
   const ESCAPE_KEY = "Escape";
   export let params;
@@ -15,14 +17,55 @@
   export let editingTitle = false;
   export let editingContent = false;
   export let slug = params.slug;
-  export let articlebucket;
+  export let articlebucket = {};
   export let article = {};
-  export let gun;
+  export let currentTags = [];
+  export var gun;
 
   var converter = new showdown.Converter();
 
   $: currentArticleMarkdown = converter.makeHtml(currentArticleContent);
-  $: articleSlug = `article://${slug}`;
+  $: articleContentMarkdown = converter.makeHtml(article.content);
+  $: tagsSet = Array.from(new Set(currentTags));
+  //   $: console.log(`currentTags: ${currentTags}`);
+
+  onMount(() => {
+    gun = Gun("ws://127.0.0.1:8000/gun");
+    // gun = Gun();
+    articlebucket = gun.get("wiki://1").get(slug);
+
+    articlebucket.get("list_tags").map((tag, i) => {
+      if (!tag) {
+        return;
+      }
+      console.log("init adding tag.." + tag.tag);
+      console.log(`init currentTags: ${currentTags}`);
+      console.log(
+        `${currentTags} includes ${tag.tag}`,
+        currentTags.includes(tag.tag)
+      );
+      if (!currentTags.includes(tag.tag)) {
+        console.log(`current tags in init: ${currentTags} and tag: ${tag.tag}`);
+        currentTags.push(tag.tag);
+      }
+      currentTags = currentTags;
+    });
+    articlebucket.on(data => {
+      article = data || {};
+      console.log(`setting article to ${JSON.stringify(article)}`);
+      currentArticleContent = article.content;
+      currentArticleTitle = article.title;
+    });
+
+    console.log("article: ", article);
+  });
+
+  function saveArticle(slug, theArticle) {
+    gun
+      .get("wiki://1")
+      .get(slug)
+      .put(theArticle);
+  }
   function editArticleTitle(article) {
     editingTitle = true;
     currentArticleTitle = article.title;
@@ -38,82 +81,70 @@
       console.log(`updating title  to ${currentArticleTitle}`);
       editingTitle = false;
       editingContent = false;
+      //   let articleTags = articlebucket.get("tags");
 
-      const newArticle = {
+      articlebucket.put({
         content: currentArticleContent,
         title: currentArticleTitle,
         slug: slug
-      };
-      gun
-        .get("wiki")
-        .get("articles")
-        .get(articleSlug)
-        .put(newArticle);
+        // articleTags: tags
+      });
     }
   }
-  // function maybeDoneEditContent(event, article){
 
-  //     if (event.key===ENTER_KEY){
-  //         console.log(`updating content  to ${currentArticleContent}`)
-  //        editingTitle = false
-  //        editingContent = false
-  //        const newArticle = {content:currentArticleContent, title:currentArticleTitle}
-  //        gun.get("wiki").get("articles").get(slug).put(newArticle)
-  //     }
-  // }
   function saveContent(event) {
     console.log(`updating content  to ${currentArticleContent}`);
+
     editingTitle = false;
     editingContent = false;
-    const newArticle = {
+    // let articleTags = articlebucket.get("tags");
+
+    articlebucket.put({
       content: currentArticleContent,
       title: currentArticleTitle,
       slug: slug
-    };
-    gun
-      .get("wiki")
-      .get("articles")
-      .get(articleSlug)
-      .put(newArticle);
+    });
   }
-  function addTag() {
-    console.log("adding tag..");
+  function addTag(input) {
+    let newTag = input.value;
+    input.value = "";
+    console.log("adding tag.." + newTag);
+    console.log(`currentTags: ${currentTags}`);
+    console.log(
+      `${currentTags} includes ${newTag}`,
+      currentTags.includes(newTag)
+    );
+    if (currentTags.includes(newTag)) {
+      console.log(`tag ${newTag} exists already`);
+      return;
+    }
+    console.log("continuing");
+    let t = gun.get("wiki://1").get(newTag + "_tag");
+    t.put({ tag: newTag });
+    articlebucket.get("list_tags").set(t);
+    currentTags = [...currentTags, newTag];
   }
   function removeTag(idx) {
-    console.log("removing tag..");
+    console.log("removing tag.." + idx + currentTags[idx]);
+    console.log(`currentTags: ${currentTags}`);
+
+    let theTag = currentTags[idx];
+    let t = gun.get("wiki://1").get(theTag + "_tag");
+    currentTags = [...currentTags.slice(0, idx), ...currentTags.slice(idx + 1)];
+    articlebucket.get("list_tags").unset(t);
   }
 
-  import { onMount } from "svelte";
-  // export let params;
-
-  onMount(() => {
-    gun = Gun("ws://127.0.0.1:8000/gun");
-
-    let articlebucket = gun
-      .get("wiki")
-      .get("articles")
-      .get(articleSlug);
-    articlebucket.on(data => {
-      article = data || {};
-      console.log(`setting article to ${JSON.stringify(article)}`);
-      currentArticleContent = article.content;
-      currentArticleTitle = article.title;
-    });
-
-    console.log("article: ", article);
-  });
-
-  //   function enter(node, callback) {
-  //     function onkeydown(event) {
-  //       if (event.which === 13) callback(node);
-  //     }
-  //     node.addEventListener("keydown", onkeydown);
-  //     return {
-  //       destroy() {
-  //         node.removeEventListener("keydown", onkeydown);
-  //       }
-  //     };
-  //   }
+  function enter(node, callback) {
+    function onkeydown(event) {
+      if (event.which === 13) callback(node);
+    }
+    node.addEventListener("keydown", onkeydown);
+    return {
+      destroy() {
+        node.removeEventListener("keydown", onkeydown);
+      }
+    };
+  }
 </script>
 
 <svelte:head>
@@ -121,14 +152,11 @@
 </svelte:head>
 <div>
   <div>
-
-    <!--
-
-    {#if article.tagList}
+    {#if tagsSet}
       <div class="tag-list">
-        {#each article.tagList as tag, i}
-          <span class="tag-default tag-pill">
-            <i class="ion-close-round" on:click={() => removeTag(i)} />
+        {#each tagsSet as tag, idx}
+          <span class="tag-default tag-pill" on:click={() => removeTag(idx)}>
+            <i class="ion-close-round" />
             {tag}
           </span>
         {/each}
@@ -140,8 +168,6 @@
       type="text"
       placeholder="Enter tags"
       use:enter={addTag} />
-
-      -->
     {#if !article.title || editingTitle}
       <input
         type="text"
@@ -166,9 +192,12 @@
         <textarea
           rows="20"
           class="form-control form-control-lg"
-          bind:value={currentArticleContent}
-          on:keydown={event => maybeDoneEditContent(event, article)} />
-        <button on:click={saveContent}>Save</button>
+          bind:value={currentArticleContent} />
+        <button
+          class="btn btn-lg pull-xs-right btn-primary"
+          on:click={saveContent}>
+          Save
+        </button>
       </div>
       <div class="markdownpreview">
         {@html currentArticleMarkdown}
@@ -177,7 +206,7 @@
       <div
         class="article-item-title article-item-label content"
         on:dblclick={() => editArticleContent(article)}>
-        {@html currentArticleMarkdown}
+        {@html articleContentMarkdown}
       </div>
     {/if}
 
