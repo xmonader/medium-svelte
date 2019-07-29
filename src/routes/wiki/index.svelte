@@ -1,7 +1,6 @@
 <script context="module">
 	export function preload({ params, query }) {
 
-		console.log("hello.... in index wiki")
 	}
 </script>
 

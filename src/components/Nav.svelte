@@ -1,63 +1,53 @@
 <script>
-	export let segment;
+  export let segment;
 </script>
 
-<style>
-	nav {
-		border-bottom: 1px solid rgba(255,62,0,0.1);
-		font-weight: 300;
-		padding: 0 1em;
-	}
+<nav class="navbar navbar-light">
+  <div class="container">
+    <a rel="prefetch" class="navbar-brand" href=".">Threebot</a>
+    <ul class="nav navbar-nav pull-xs-right">
+      <li class="nav-item">
+        <a
+          rel="prefetch"
+          class="nav-link"
+          class:active={segment === '/'}
+          href="/">
+          Home
+        </a>
+      </li>
 
-	ul {
-		margin: 0;
-		padding: 0;
-	}
-
-	/* clearfix */
-	ul::after {
-		content: '';
-		display: block;
-		clear: both;
-	}
-
-	li {
-		display: block;
-		float: left;
-	}
-
-	.selected {
-		position: relative;
-		display: inline-block;
-	}
-
-	.selected::after {
-		position: absolute;
-		content: '';
-		width: calc(100% - 1em);
-		height: 2px;
-		background-color: rgb(255,62,0);
-		display: block;
-		bottom: -1px;
-	}
-
-	a {
-		text-decoration: none;
-		padding: 1em 0.5em;
-		display: block;
-	}
-</style>
-
-<nav>
-	<ul>
-		<li><a class='{segment === undefined ? "selected" : ""}' href='.'>home</a></li>
-		<li><a class='{segment === "about" ? "selected" : ""}' href='about'>about</a></li>
-		<li><a class='{segment === "contact" ? "contact" : ""}' href='contact'>contact</a></li>
-
-		<!-- for the blog link, we're using rel=prefetch so that Sapper prefetches
-		     the blog data when we hover over the link or tap it on a touchscreen -->
-		<li><a rel=prefetch class='{segment === "blog" ? "selected" : ""}' href='blog'>blog</a></li>
-        <li><a rel=prefetch class='{segment === "wiki" ? "selected" : ""}' href='wiki'>wiki</a></li>
+      <li class="nav-item" />
+      <li class="nav-item">
+        <a
+          rel="prefetch"
+          href="/wiki"
+          class="nav-link"
+          class:active={segment === '/wiki'}>
+          <i class="ion-compose" />
+          &nbsp;Wiki
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          rel="prefetch"
+          href="/contact"
+          class="nav-link"
+          class:active={segment === '/contact'}>
+          <i class="ion-compose" />
+          &nbsp; Contact
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          rel="prefetch"
+          href="/settings"
+          class="nav-link"
+          class:active={segment === '/settings'}>
+          <i class="ion-gear-a" />
+          &nbsp;Settings
+        </a>
+      </li>
 
     </ul>
+  </div>
 </nav>
