@@ -2,6 +2,7 @@ import {
     writable
 } from 'svelte/store';
 
+import moment from 'moment'
 import Gun from 'gun/gun'
 
 const rel_ = Gun.val.link._; // '#'
@@ -36,6 +37,7 @@ class GunStore {
 
     updateArticleWithData(wikiId, articleSlug, withData) {
         console.log(`updating article ${articleSlug} with data ${withData}`)
+        withData.updatedAt = moment().format('MMMM Do YYYY, h:mm:ss a')
         this.gun
             .get(`wiki://${wikiId}`)
             .get(articleSlug)
@@ -59,6 +61,8 @@ class GunStore {
             .get(`wiki://${wikiId}`)
             .get(articleSlug)
             .get("list_tags").unset(t);
+
+
         return true;
     }
     incArticleLikes(wikiId, articleSlug) {
@@ -82,7 +86,7 @@ class GunStore {
                 if (k && v && !k.includes("_tag") && v.title !== undefined) {
                     console.log("in all articles store here.... ", k, v, wikiId, " done");
 
-                    res.push(v);
+                    res.push(this.prepareArticle(v));
                 }
             });
         console.log(`store all articles: ${res}`)
@@ -95,7 +99,7 @@ class GunStore {
         this.gun
             .get(`wiki://${wikiId}`)
             .get(articleSlug).on((data) => {
-                article = data
+                article = this.prepareArticle(data)
             })
         console.log(`returning article ${JSON.stringify(article)}`)
         return article
@@ -111,6 +115,31 @@ class GunStore {
             })
         return res;
     }
+    getEmptyArticle(slug) {
+        let now = moment().format('MMMM Do YYYY, h:mm:ss a')
 
+        return {
+
+            likes: 0,
+            content: "",
+            slug: slug,
+            title: "",
+            createdAt: now,
+            updatedAt: now
+
+        }
+    }
+
+    prepareArticle(article) {
+        console.log("calling prepare article..")
+        let now = moment().format('MMMM Do YYYY, h:mm:ss a')
+        article.updatedAt = article.updatedAt || now
+        article.likes = article.likes || 0
+        article.createdAt = article.createAt || now
+        console.log(`article prepared with ${JSON.stringify(article)}`)
+        return article
+    }
 }
+
+
 export let gunStore = writable(new GunStore())

@@ -20,8 +20,7 @@
   export let editingContent = false;
   export let slug = params.slug;
   export let articlebucket = {};
-  export const emptyArticle = { likes: 0, content: "", slug: slug, title: "" };
-  export let article = emptyArticle;
+  export let article = $gunStore.getEmptyArticle(slug);
   export let currentTags = [];
   export var gun;
   $: currentArticleMarkdown = converter.makeHtml(currentArticleContent);
@@ -59,7 +58,7 @@
     });
     articlebucket.on(data => {
       console.log(`incoming data ${JSON.stringify(data)}`);
-      article = data || emptyArticle;
+      article = data || $gunStore.getEmptyArticle(slug);
       article.likes = article.likes || 0;
       console.log(`setting article to ${JSON.stringify(article)}`);
       currentArticleContent = article.content;
@@ -73,7 +72,8 @@
     tagslist = $gunStore.getArticleTags(1, slug);
   }
   function reloadArticle(slug) {
-    article = $gunStore.getArticleBySlug(slug) || emptyArticle;
+    article =
+      $gunStore.getArticleBySlug(slug) || $gunStore.getEmptyArticle(slug);
     console.log(`reloading article to ${JSON.stringify(article)}`);
     currentArticleContent = article.content;
     currentArticleTitle = article.title;
@@ -155,6 +155,7 @@
 </svelte:head>
 <div>
   <div>
+    <span class="date">{article.updatedAt}</span>
     <div class="tag-list">
       <!-- currenttags {currentTags} taglist {tagslist} -->
       {#each tagslist as tag, idx}
