@@ -26,8 +26,9 @@
 
   $: currentArticleMarkdown = converter.makeHtml(currentArticleContent);
   $: articleContentMarkdown = converter.makeHtml(article.content);
-  $: tagsSet = Array.from(new Set(currentTags));
-  //   $: console.log(`currentTags: ${currentTags}`);
+
+  let tagsSet = () =>
+    Array.from(new Set(currentTags.filter(t => t !== undefined && t.slug)));
 
   onMount(() => {
     gun = Gun("ws://127.0.0.1:8000/gun");
@@ -44,7 +45,7 @@
         `${currentTags} includes ${tag.tag}`,
         currentTags.includes(tag.tag)
       );
-      if (!currentTags.includes(tag.tag)) {
+      if (tag !== undefined && !currentTags.includes(tag.tag)) {
         console.log(`current tags in init: ${currentTags} and tag: ${tag.tag}`);
         currentTags.push(tag.tag);
       }
@@ -152,16 +153,16 @@
 </svelte:head>
 <div>
   <div>
-    {#if tagsSet}
-      <div class="tag-list">
-        {#each tagsSet as tag, idx}
+    <div class="tag-list">
+      {#each tagsSet() as tag, idx}
+        {#if tag !== undefined}
           <span class="tag-default tag-pill" on:click={() => removeTag(idx)}>
             <i class="ion-close-round" />
             {tag}
           </span>
-        {/each}
-      </div>
-    {/if}
+        {/if}
+      {/each}
+    </div>
 
     <input
       class="form-control"

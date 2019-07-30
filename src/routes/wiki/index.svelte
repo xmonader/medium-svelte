@@ -4,6 +4,7 @@
 
 <script>
   import { onMount } from "svelte";
+  import Tags from "../../components/Tags.svelte";
   export let params;
 
   //   onMount(() => {});
@@ -16,7 +17,7 @@
       .map()
       .on((v, k) => {
         console.log("in here.... ", k, v);
-        if (k.includes("_tag")) {
+        if (k && v && k.includes("_tag")) {
           res.push(k.slice(0, k.length - 4));
         }
       });
@@ -32,15 +33,17 @@
     gun
       .get("wiki://1")
       .map()
-      .on((v, k) =>
-        res.push({
-          slug: v.slug,
-          title: v.title,
-          content: v.content,
-          likes: v.likes || 0,
-          author: {}
-        })
-      );
+      .on((v, k) => {
+        if (v.title !== undefined && v.slug !== undefined) {
+          res.push({
+            slug: v.slug,
+            title: v.title,
+            content: v.content,
+            likes: v.likes || 0,
+            author: {}
+          });
+        }
+      });
     return res;
   }
 </script>
@@ -56,33 +59,42 @@
   <title>Wiki main</title>
 
 </svelte:head>
-<h1>My Articles</h1>
 
-{#each getArticles() as article}
-  <!-- we're using the non-standard `rel=prefetch` attribute to
+<div class="row">
+
+  <div class="col-md-9 pull-xs-left">
+
+    {#each getArticles() as article}
+      <!-- we're using the non-standard `rel=prefetch` attribute to
 				tell Sapper to load the data for the page as soon as
 				the user hovers over the link or taps it, instead of
 				waiting for the 'click' event -->
-  <div>
-    <a rel="prefetch" href="wiki/{article.slug}">
-      <h1>{article.title}</h1>
-    </a>
-    <div class="pull-xs-right">
-      <button class="btn btn-sm btn-outline-primary">
-        <i class="ion-heart" />
-        {article.likes}
-      </button>
-    </div>
-  </div>
-{:else}no articles yet..{/each}
-<div class="container page">
-  <div class="row">
+      <div class="row">
 
-    <div class="col-md-3">
-      <div class="sidebar">
-        <p>Popular Tags</p>
-        {getAllTags()}
+        <a rel="prefetch" href="wiki/{article.slug}">
+          <h1>{article.title}</h1>
+        </a>
+        <div class="col-md-3 pull-xs-right">
+          <button class="btn btn-sm btn-outline-primary">
+            <i class="ion-heart" />
+            {article.likes}
+          </button>
+        </div>
+
       </div>
+    {:else}
+      <div class="row">
+        <p>no articles yet..</p>
+      </div>
+    {/each}
+
+  </div>
+
+  <div class="col-md-3 pull-xs-right">
+    <div class="sidebar">
+      <h2>Popular Tags</h2>
+      <Tags tags={getAllTags()} />
     </div>
   </div>
+
 </div>
