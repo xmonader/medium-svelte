@@ -7,6 +7,7 @@
 </script>
 
 <script>
+  import { gunStore } from "./gunstore.js";
   import { onMount } from "svelte";
 
   const ENTER_KEY = "Enter";
@@ -19,13 +20,20 @@
   export let editingContent = false;
   export let slug = params.slug;
   export let articlebucket = {};
-  export let article = {};
+  export const emptyArticle = { likes: 0, content: "", slug: slug, title: "" };
+  export let article = emptyArticle;
   export let currentTags = [];
   export var gun;
   $: currentArticleMarkdown = converter.makeHtml(currentArticleContent);
   $: articleContentMarkdown = converter.makeHtml(article.content);
-  $: tagslist = currentTags.filter(x => x !== undefined && x.tag); // doesn't WORK!! why?
-
+  $: tagslist = currentTags.filter(x => x !== undefined);
+  $: dataToSave = {
+    content: currentArticleContent,
+    title: currentArticleTitle,
+    slug: slug,
+    likes: article.likes
+    // articleTags: tags
+  };
   var converter = new showdown.Converter();
 
   onMount(() => {
@@ -51,7 +59,7 @@
     });
     articlebucket.on(data => {
       console.log(`incoming data ${JSON.stringify(data)}`);
-      article = data || {};
+      article = data || emptyArticle;
       article.likes = article.likes || 0;
       console.log(`setting article to ${JSON.stringify(article)}`);
       currentArticleContent = article.content;
@@ -61,11 +69,20 @@
     console.log("article: ", article);
   });
 
+  function reloadTags() {
+    tagslist = $gunStore.getArticleTags(1, slug);
+  }
+  function reloadArticle(slug) {
+    article = $gunStore.getArticleBySlug(slug);
+    article.likes = article.likes || 0;
+    console.log(`reloading article to ${JSON.stringify(article)}`);
+    currentArticleContent = article.content;
+    currentArticleTitle = article.title;
+    likes = article.likes;
+  }
   function saveArticle(slug, theArticle) {
-    gun
-      .get("wiki://1")
-      .get(slug)
-      .put(theArticle);
+    $gunStore.updateArticleWithData(1, slug, dataToSave);
+    reloadArticle();
   }
   function editArticleTitle(article) {
     editingTitle = true;
@@ -82,69 +99,43 @@
       console.log(`updating title  to ${currentArticleTitle}`);
       editingTitle = false;
       editingContent = false;
-      //   let articleTags = articlebucket.get("tags");
-
-      articlebucket.put({
-        content: currentArticleContent,
-        title: currentArticleTitle,
-        slug: slug,
-        likes: currentLikes
-        // articleTags: tags
-      });
+      $gunStore.updateArticleWithData(1, slug, dataToSave);
+      reloadArticle();
     }
   }
 
   function saveContent(event) {
     console.log(`updating content  to ${currentArticleContent}`);
-
     editingTitle = false;
     editingContent = false;
-    // let articleTags = articlebucket.get("tags");
-
-    articlebucket.put({
-      content: currentArticleContent,
-      title: currentArticleTitle,
-      slug: slug,
-      likes: currentLikes
-    });
+    $gunStore.updateArticleWithData(1, slug, dataToSave);
+    reloadArticle();
   }
   function like() {
-    console.log(`likes ${article.likes}`);
-    article.likes++;
-    articlebucket.put({
-      likes: article.likes
-    });
+    article.likes = $gunStore.incArticleLikes(1, slug);
   }
   function addTag(input) {
     let newTag = input.value;
     input.value = "";
     console.log("adding tag.." + newTag);
     console.log(`currentTags: ${currentTags}, tagslist ${tagslist}`);
-
-    console.log(
-      `${currentTags} includes ${newTag}`,
-      currentTags.includes(newTag)
-    );
-    if (currentTags.includes(newTag)) {
-      console.log(`tag ${newTag} exists already`);
-      return;
+    let added = $gunStore.addTagToArticle(1, slug, newTag);
+    if (added) {
+      currentTags = [...currentTags, newTag];
     }
-    console.log("continuing");
-    let t = gun.get("wiki://1").get(newTag + "_tag");
-    t.put({ tag: newTag });
-    articlebucket.get("list_tags").set(t);
-    currentTags = [...currentTags, newTag];
-    currentTags = currentTags;
+    reloadTags();
   }
   function removeTag(idx) {
-    console.log("removing tag.." + idx + currentTags[idx]);
-    console.log(`currentTags: ${currentTags}, tagslist ${tagslist}`);
-
-    let theTag = currentTags[idx];
-    let t = gun.get("wiki://1").get(theTag + "_tag");
-    currentTags = [...currentTags.slice(0, idx), ...currentTags.slice(idx + 1)];
-    currentTags = currentTags;
-    articlebucket.get("list_tags").unset(t);
+    console.log(`removing tag ${currentTags[idx]}`);
+    let tag = currentTags[idx];
+    let removed = $gunStore.removeTagFromArticle(1, slug, tag);
+    if (removed) {
+      currentTags = [
+        ...currentTags.slice(0, idx),
+        ...currentTags.slice(idx + 1)
+      ];
+    }
+    reloadTags();
   }
 
   function enter(node, callback) {
@@ -167,13 +158,11 @@
   <div>
     <div class="tag-list">
       <!-- currenttags {currentTags} taglist {tagslist} -->
-      {#each currentTags as tag, idx}
-        {#if tag !== undefined}
-          <span class="tag-default tag-pill" on:click={() => removeTag(idx)}>
-            <i class="ion-close-round" />
-            {tag}
-          </span>
-        {/if}
+      {#each tagslist as tag, idx}
+        <span class="tag-default tag-pill" on:click={() => removeTag(idx)}>
+          <i class="ion-close-round" />
+          {tag}
+        </span>
       {/each}
     </div>
 

@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "compression": "^1.7.1",
+    "gun": "^0.2019.726",
     "polka": "^0.5.0",
+    "requirejs": "^2.3.6",
     "sirv": "^0.4.0"
   },
   "devDependencies": {
