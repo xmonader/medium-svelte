@@ -139,6 +139,20 @@ class GunStore {
         console.log(`article prepared with ${JSON.stringify(article)}`)
         return article
     }
+
+    getArticlesByTag(wikiId, tag) {
+        let res = []
+        this.gun
+            .get(`wiki://${wikiId}`)
+            .map().on((v, k) => {
+                if (v !== undefined && !k.includes("_tag") && v.slug) {
+                    let articleTags = this.getArticleTags(v.slug)
+                    if (articleTags.includes(tag)) {
+                        res.push(this.prepareArticle(v))
+                    }
+                }
+            })
+    }
 }
 
 
