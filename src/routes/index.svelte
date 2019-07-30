@@ -38,6 +38,15 @@
       <h1 class="logo-font">Threebot Publishing</h1>
       <p>A place to share your knowledge.</p>
     </div>
-  </div>
 
+  </div>
+  <div>
+    <ul>
+      <li>
+        <h4>
+          <a href="/wiki">Wiki</a>
+        </h4>
+      </li>
+    </ul>
+  </div>
 </div>

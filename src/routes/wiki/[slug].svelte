@@ -73,8 +73,7 @@
     tagslist = $gunStore.getArticleTags(1, slug);
   }
   function reloadArticle(slug) {
-    article = $gunStore.getArticleBySlug(slug);
-    article.likes = article.likes || 0;
+    article = $gunStore.getArticleBySlug(slug) || emptyArticle;
     console.log(`reloading article to ${JSON.stringify(article)}`);
     currentArticleContent = article.content;
     currentArticleTitle = article.title;

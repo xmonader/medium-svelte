@@ -97,6 +97,7 @@ class GunStore {
             .get(articleSlug).on((data) => {
                 article = data
             })
+        console.log(`returning article ${JSON.stringify(article)}`)
         return article
     }
     getArticleTags(wikiId, articleSlug) {
