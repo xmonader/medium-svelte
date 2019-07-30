@@ -14,6 +14,7 @@
   export let params;
   export let currentArticleTitle = "";
   export let currentArticleContent = "";
+  export let currentLikes = 0;
   export let editingTitle = false;
   export let editingContent = false;
   export let slug = params.slug;
@@ -21,14 +22,11 @@
   export let article = {};
   export let currentTags = [];
   export var gun;
-
-  var converter = new showdown.Converter();
-
   $: currentArticleMarkdown = converter.makeHtml(currentArticleContent);
   $: articleContentMarkdown = converter.makeHtml(article.content);
+  $: tagslist = currentTags.filter(x => x !== undefined && x.tag); // doesn't WORK!! why?
 
-  let tagsSet = () =>
-    Array.from(new Set(currentTags.filter(t => t !== undefined && t.slug)));
+  var converter = new showdown.Converter();
 
   onMount(() => {
     gun = Gun("ws://127.0.0.1:8000/gun");
@@ -39,20 +37,22 @@
       if (!tag) {
         return;
       }
-      console.log("init adding tag.." + tag.tag);
-      console.log(`init currentTags: ${currentTags}`);
+      // console.log("init adding tag.." + tag.tag);
+      // console.log(`init currentTags: ${currentTags}`);
       console.log(
         `${currentTags} includes ${tag.tag}`,
         currentTags.includes(tag.tag)
       );
       if (tag !== undefined && !currentTags.includes(tag.tag)) {
-        console.log(`current tags in init: ${currentTags} and tag: ${tag.tag}`);
+        // console.log(`current tags in init: ${currentTags} and tag: ${tag.tag}`);
         currentTags.push(tag.tag);
       }
-      currentTags = currentTags;
+      currentTags = Array.from(new Set(currentTags));
     });
     articlebucket.on(data => {
+      console.log(`incoming data ${JSON.stringify(data)}`);
       article = data || {};
+      article.likes = article.likes || 0;
       console.log(`setting article to ${JSON.stringify(article)}`);
       currentArticleContent = article.content;
       currentArticleTitle = article.title;
@@ -87,7 +87,8 @@
       articlebucket.put({
         content: currentArticleContent,
         title: currentArticleTitle,
-        slug: slug
+        slug: slug,
+        likes: currentLikes
         // articleTags: tags
       });
     }
@@ -103,14 +104,23 @@
     articlebucket.put({
       content: currentArticleContent,
       title: currentArticleTitle,
-      slug: slug
+      slug: slug,
+      likes: currentLikes
+    });
+  }
+  function like() {
+    console.log(`likes ${article.likes}`);
+    article.likes++;
+    articlebucket.put({
+      likes: article.likes
     });
   }
   function addTag(input) {
     let newTag = input.value;
     input.value = "";
     console.log("adding tag.." + newTag);
-    console.log(`currentTags: ${currentTags}`);
+    console.log(`currentTags: ${currentTags}, tagslist ${tagslist}`);
+
     console.log(
       `${currentTags} includes ${newTag}`,
       currentTags.includes(newTag)
@@ -124,14 +134,16 @@
     t.put({ tag: newTag });
     articlebucket.get("list_tags").set(t);
     currentTags = [...currentTags, newTag];
+    currentTags = currentTags;
   }
   function removeTag(idx) {
     console.log("removing tag.." + idx + currentTags[idx]);
-    console.log(`currentTags: ${currentTags}`);
+    console.log(`currentTags: ${currentTags}, tagslist ${tagslist}`);
 
     let theTag = currentTags[idx];
     let t = gun.get("wiki://1").get(theTag + "_tag");
     currentTags = [...currentTags.slice(0, idx), ...currentTags.slice(idx + 1)];
+    currentTags = currentTags;
     articlebucket.get("list_tags").unset(t);
   }
 
@@ -154,7 +166,8 @@
 <div>
   <div>
     <div class="tag-list">
-      {#each tagsSet() as tag, idx}
+      <!-- currenttags {currentTags} taglist {tagslist} -->
+      {#each currentTags as tag, idx}
         {#if tag !== undefined}
           <span class="tag-default tag-pill" on:click={() => removeTag(idx)}>
             <i class="ion-close-round" />
@@ -208,6 +221,16 @@
         class="article-item-title article-item-label content"
         on:dblclick={() => editArticleContent(article)}>
         {@html articleContentMarkdown}
+      </div>
+    {/if}
+
+    {#if !(editingContent || editingTitle)}
+      <div class="rows">
+        heart more
+        <button class="btn btn-sm btn-outline-primary" on:click={like}>
+          <i class="ion-heart" />
+          {article.likes}
+        </button>
       </div>
     {/if}
 
